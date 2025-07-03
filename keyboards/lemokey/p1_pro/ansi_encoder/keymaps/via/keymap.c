@@ -14,6 +14,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "color.h"
+#include "rgb_matrix.h"
 #include QMK_KEYBOARD_H
 #include "lemokey_common.h"
 
@@ -72,6 +74,31 @@ const uint16_t PROGMEM encoder_map[][NUM_ENCODERS][2] = {
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     if(!process_record_lemokey_common(keycode, record)) {
         return false;
+    }
+    return true;
+}
+
+static rgb_config_t saved_rgb_matrix_config;
+static bool caps_lock_active = false;
+
+bool led_update_user(led_t led_state) {
+    // Breath when caps is on otherwise go back to solid
+    if (led_state.caps_lock && !caps_lock_active) {
+        saved_rgb_matrix_config = rgb_matrix_config;
+        rgblight_enable_noeeprom();
+        rgblight_set_speed_noeeprom(255 * 0.75);
+        rgblight_mode_noeeprom(RGB_MATRIX_BREATHING);
+        caps_lock_active = true;
+    } else if (!led_state.caps_lock && caps_lock_active) {
+        rgb_matrix_config = saved_rgb_matrix_config;
+        caps_lock_active = false;
+    }
+    return true;
+}
+
+bool rgb_matrix_indicators_user(void) {
+    if(caps_lock_active) {
+        rgblight_sethsv_noeeprom(HSV_PURPLE);
     }
     return true;
 }
